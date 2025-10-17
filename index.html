@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de PDF a partir de LaTeX — Declaração de Testemunha</title>
+  <!-- Tailwind via CDN para layout rápido -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Site estático que preenche um modelo LaTeX com dados do formulário e gera PDF no navegador." />
+  <style>
+    .card { @apply bg-white shadow-lg rounded-2xl p-6; }
+    .label { @apply text-sm font-medium text-gray-700; }
+    .input { @apply mt-1 w-full rounded-xl border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500; }
+    .btn   { @apply inline-flex items-center justify-center rounded-2xl px-4 py-2 font-semibold shadow; }
+    .btn-primary { @apply bg-indigo-600 text-white hover:bg-indigo-700; }
+    .btn-secondary { @apply bg-gray-100 text-gray-900 hover:bg-gray-200; }
+    .muted { @apply text-xs text-gray-500; }
+    .grid-2 { @apply grid grid-cols-1 md:grid-cols-2 gap-4; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+  <header class="max-w-5xl mx-auto px-4 pt-8 pb-4">
+    <h1 class="text-2xl md:text-3xl font-bold">Gerar PDF a partir de LaTeX — Declaração de Testemunha</h1>
+    <p class="text-gray-600 mt-2">Preencha o formulário; o site monta um arquivo <code>.tex</code> com o modelo e gera o PDF (via TeX em WebAssembly). Hospedável no GitHub Pages e incorporável no Wix.</p>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 pb-16">
+    <div class="card">
+      <form id="formDecl" class="space-y-6">
+        <h2 class="text-xl font-semibold">Dados da Testemunha</h2>
+        <div class="grid-2">
+          <div>
+            <label class="label" for="nome">Nome completo</label>
+            <input class="input" id="nome" required />
+          </div>
+          <div>
+            <label class="label" for="cpf">CPF</label>
+            <input class="input" id="cpf" placeholder="000.000.000-00" />
+          </div>
+          <div>
+            <label class="label" for="rg">RG</label>
+            <input class="input" id="rg" />
+          </div>
+          <div>
+            <label class="label" for="nacionalidade">Nacionalidade</label>
+            <input class="input" id="nacionalidade" placeholder="brasileira" />
+          </div>
+          <div>
+            <label class="label" for="profissao">Profissão</label>
+            <input class="input" id="profissao" />
+          </div>
+          <div>
+            <label class="label" for="endereco">Endereço</label>
+            <input class="input" id="endereco" placeholder="Rua, nº, bairro, cidade/UF" />
+          </div>
+          <div>
+            <label class="label" for="email">E-mail</label>
+            <input class="input" id="email" type="email" />
+          </div>
+          <div>
+            <label class="label" for="fone">Telefone</label>
+            <input class="input" id="fone" />
+          </div>
+        </div>
+
+        <h2 class="text-xl font-semibold">Objeto da Declaração</h2>
+        <div class="grid-2">
+          <div>
+            <label class="label" for="declarada">Declara em favor de (nome completo)</label>
+            <input class="input" id="declarada" />
+          </div>
+          <div>
+            <label class="label" for="menor">Nome do menor (se aplicável)</label>
+            <input class="input" id="menor" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="label" for="periodo">Período de convivência/observação</label>
+            <input class="input" id="periodo" placeholder="ex.: 2018–2025" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="label" for="relato">Relato objetivo (fatos observados)</label>
+            <textarea class="input" id="relato" rows="6" placeholder="Descreva, de forma objetiva, os fatos observados, locais, datas aproximadas e contextos."></textarea>
+          </div>
+        </div>
+
+        <h2 class="text-xl font-semibold">Local e Data</h2>
+        <div class="grid-2">
+          <div>
+            <label class="label" for="local">Local</label>
+            <input class="input" id="local" placeholder="Rio de Janeiro/RJ" />
+          </div>
+          <div>
+            <label class="label" for="data">Data</label>
+            <input class="input" id="data" type="date" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 pt-2">
+          <button type="button" id="btnGerarPDF" class="btn btn-primary">Gerar PDF</button>
+          <button type="button" id="btnBaixarTex" class="btn btn-secondary">Baixar .tex</button>
+          <span class="muted">Dica: publique esta página no GitHub Pages e incorpore o link no Wix.</span>
+        </div>
+
+        <div id="status" class="mt-4 text-sm text-gray-600"></div>
+      </form>
+    </div>
+
+    <section class="mt-8 text-sm text-gray-500">
+      <h3 class="font-semibold mb-2">Notas técnicas</h3>
+      <ol class="list-decimal ml-5 space-y-1">
+        <li>Este site usa um compilador TeX em WebAssembly (<strong>texlive.js</strong>) para gerar o PDF inteiramente no navegador, o que permite hospedagem 100% estática (GitHub Pages). O primeiro carregamento pode ser pesado (vários MB).</li>
+        <li>Para funcionar, você deve hospedar <code>texlive.js</code>, <code>texlive.wasm</code> e o arquivo de dados <code>texlive.data</code> no mesmo repositório (pasta <code>/texlive/</code>, por exemplo) e ajustar as URLs no código abaixo (constante <code>TEXLIVE_BASE</code>).</li>
+        <li>Alternativa: disponibilizamos também o botão “Baixar .tex”, para compilar em sua máquina (tectonic/pdflatex) se preferir.</li>
+      </ol>
+    </section>
+  </main>
+
+  <!-- ====== Dependências do TeX (texlive.js + wasm). ====== -->
+  <!-- Coloque estes 3 arquivos no seu repositório, ex.: /texlive/texlive.js, /texlive/texlive.wasm, /texlive/texlive.data -->
+  <script>
+    // Caminho base onde você hospedará texlive.js/wasm/data em seu GitHub Pages
+    // Exemplo quando publicar: const TEXLIVE_BASE = "./texlive/";
+    const TEXLIVE_BASE = "./texlive/";
+  </script>
+  <script defer src="./texlive/texlive.js"></script>
+
+  <script>
+    // ===== Modelo LaTeX (ABNT-like simples para declaração) =====
+    // OBS: Ajuste para o seu template oficial conforme exigências do TJRJ se necessário.
+    const latexTemplate = (data) => `\\documentclass[12pt,a4paper]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage[brazil]{babel}
+\\usepackage{setspace}
+\\usepackage{geometry}
+\\usepackage{hyperref}
+\\geometry{left=3cm,right=2cm,top=3cm,bottom=2cm}
+\\setstretch{1.2}
+
+\\begin{document}
+\\begin{center}
+    {\\Large\\textbf{DECLARAÇÃO DE TESTEMUNHA}}\\\\[0.5cm]
+\n    {\\normalsize Modelo gerado automaticamente}
+\\end{center}
+
+\\vspace{0.6cm}
+Eu, {\\bf ${data.nome}}, nacionalidade ${data.nacionalidade || ''}, profissão ${data.profissao || ''}, portador(a) do RG ${data.rg || ''} e CPF ${data.cpf || ''}, residente e domiciliado(a) em ${data.endereco || ''}, endereço eletrônico ${data.email || ''} e telefone ${data.fone || ''}, declaro, para os devidos fins, que presto a presente declaração em favor de ${data.declarada || ''}${data.menor ? `, envolvendo o menor ${data.menor}` : ''}.
+
+\\vspace{0.4cm}
+No período de ${data.periodo || ''}, pude observar os seguintes fatos, que relato de forma fiel e objetiva:
+
+\\vspace{0.3cm}
+\\begin{quote}
+${(data.relato || '').replace(/([#%&_$])/g, '\\$1')}
+\\end{quote}
+
+\\vspace{0.4cm}
+Declaro estar ciente de que a falsidade desta declaração me sujeita às penalidades previstas em lei.
+
+\\vspace{1cm}
+${data.local || ''}, ${data.dataBR || ''}.
+
+\\vspace{2cm}
+\\noindent\\rule{8cm}{0.4pt}\\\\
+${data.nome}
+
+\\end{document}`;
+
+    // ===== Utilidades =====
+    const $$ = (id) => document.getElementById(id);
+    function formData() {
+      const d = {
+        nome: $$("nome").value.trim(),
+        cpf: $$("cpf").value.trim(),
+        rg: $$("rg").value.trim(),
+        nacionalidade: $$("nacionalidade").value.trim(),
+        profissao: $$("profissao").value.trim(),
+        endereco: $$("endereco").value.trim(),
+        email: $$("email").value.trim(),
+        fone: $$("fone").value.trim(),
+        declarada: $$("declarada").value.trim(),
+        menor: $$("menor").value.trim(),
+        periodo: $$("periodo").value.trim(),
+        relato: $$("relato").value.trim(),
+        local: $$("local").value.trim(),
+        dataISO: $$("data").value,
+      };
+      d.dataBR = d.dataISO ? new Date(d.dataISO + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+      return d;
+    }
+
+    function download(filename, blob) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // ===== Botão: Baixar .tex =====
+    $$("btnBaixarTex").addEventListener('click', () => {
+      const data = formData();
+      if (!data.nome) { $$("status").textContent = 'Preencha ao menos o nome completo.'; return; }
+      const tex = latexTemplate(data);
+      const blob = new Blob([tex], { type: 'text/x-tex;charset=utf-8' });
+      download('declaracao_testemunha.tex', blob);
+    });
+
+    // ===== Compilação LaTeX → PDF no navegador (texlive.js) =====
+    // API mínima: inicializa o módulo Emscripten e alimenta um FS virtual com main.tex.
+    // Abaixo, implementamos um "bootstrap" que aguarda o runtime e chama pdflatex.
+
+    async function ensureTexLiveReady() {
+      // texlive.js (Emscripten) expõe Module; garantimos paths dos assets .wasm/.data
+      return new Promise((resolve, reject) => {
+        if (!window.Module) window.Module = {};
+        window.Module.locateFile = (path) => {
+          if (path.endsWith('.wasm') || path.endsWith('.data')) return TEXLIVE_BASE + path;
+          return path;
+        };
+        // Se já inicializado, resolvemos
+        if (window.Module.calledRun) return resolve(window.Module);
+        // Espera o runtime
+        const check = () => {
+          if (window.Module && window.Module.calledRun) resolve(window.Module);
+          else setTimeout(check, 200);
+        };
+        check();
+        // Timeout de segurança
+        setTimeout(() => {
+          if (!window.Module || !window.Module.calledRun) reject(new Error('Falha ao carregar texlive.js. Verifique os arquivos em /texlive/.'));
+        }, 20000);
+      });
+    }
+
+    async function compileLatexToPdf(texSource) {
+      const Module = await ensureTexLiveReady();
+      const FS = Module.FS;
+      // Limpa diretório de trabalho anterior
+      try { FS.unmount('/work'); } catch {}
+      try { FS.rmdir('/work'); } catch {}
+      FS.mkdir('/work');
+      FS.mount(Module.WORKERFS, { blobs: [] }, '/work');
+      // Escreve o arquivo principal
+      FS.writeFile('/work/main.tex', texSource);
+      // Executa pdflatex 2 vezes para refs
+      const runLatex = (args) => new Promise((res) => {
+        Module.callMain(args);
+        res();
+      });
+      await runLatex(['-interaction=nonstopmode', 'main.tex']);
+      await runLatex(['-interaction=nonstopmode', 'main.tex']);
+      // Lê o PDF
+      const pdfBytes = FS.readFile('/work/main.pdf');
+      return new Blob([pdfBytes], { type: 'application/pdf' });
+    }
+
+    $$("btnGerarPDF").addEventListener('click', async () => {
+      const data = formData();
+      if (!data.nome) { $$("status").textContent = 'Preencha ao menos o nome completo.'; return; }
+      const tex = latexTemplate(data);
+      $$("status").textContent = 'Compilando LaTeX no navegador. Aguarde o carregamento inicial (pode demorar).';
+      try {
+        const pdfBlob = await compileLatexToPdf(tex);
+        download('declaracao_testemunha.pdf', pdfBlob);
+        $$("status").textContent = 'PDF gerado com sucesso.';
+      } catch (e) {
+        console.error(e);
+        $$("status").innerHTML = 'Não foi possível compilar no navegador. Verifique os assets do TeX em <code>/texlive/</code>. Como alternativa, use “Baixar .tex” e compile localmente (tectonic/pdflatex).';
+      }
+    });
+  </script>
+</body>
+</html>
